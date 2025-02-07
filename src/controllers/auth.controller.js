@@ -1,11 +1,13 @@
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
+import generateToken from "../lib/utils.js";
 
 const signup = async (req, res) => {
   const { fullname, email, password } = req.body;
   try {
-    if (!fullname || !email || !password)
-      return res.status(400).json({ message: "All field mut be filled." });
+    if (!fullname || !email || !password) {
+      return res.status(400).json({ message: "All field must be filled." });
+    }
 
     if (password.length < 6)
       return res
@@ -24,15 +26,19 @@ const signup = async (req, res) => {
       fullname: fullname,
       email: email,
       password: hashedPassword,
-      profilePic: "",
     });
 
-    if (user) {
-      // generate jwt
+    if (newUser) {
+      generateToken(newUser._id, res);
+      await newUser.save();
+      res.status(201).json({ newUser });
     } else {
       return res.status(400).json({ message: "Invalid user data." });
     }
-  } catch (error) {}
+  } catch (error) {
+    console.log("Error: " + error.message);
+    res.status(500).json({ message: "Internal server error." });
+  }
 };
 
 const login = (req, res) => {
