@@ -1,5 +1,5 @@
-import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
+import User from "../models/user.model.js";
 import generateToken from "../lib/utils.js";
 
 const signup = async (req, res) => {
@@ -41,8 +41,33 @@ const signup = async (req, res) => {
   }
 };
 
-const login = (req, res) => {
-  res.send("Log in");
+const login = async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    if (!email || !password) {
+      return res.status(400).json({ message: "All field must be filled." });
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
+
+    const isPasswordCorrect = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordCorrect) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
+
+    generateToken(user._id, res);
+
+    res.status(200).json({ message: "Login successfully", user });
+  } catch (error) {
+    console.log("Error: " + error.message);
+    res.status(500).json({ message: "Internal server error." });
+  }
 };
 
 const logout = (req, res) => {
